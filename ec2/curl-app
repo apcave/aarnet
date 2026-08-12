@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Get the container ID of the app container
+container_id=$(sudo docker-compose -f docker-compose-deploy.yml ps -q app)
+
+# Get the IP address of the app container
+container_ip=$(sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $container_id)
+
+# Print the IP address
+echo "The IP address of the app container is: $container_ip"
+
+curl "$container_ip:8000/admin"

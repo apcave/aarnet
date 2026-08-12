@@ -1,0 +1,2 @@
+#!/bin/bash
+ssh ec2-user@3.107.238.4
