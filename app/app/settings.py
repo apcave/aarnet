@@ -29,14 +29,13 @@ DEBUG_VALUE = os.environ.get('DJANGO_DEBUG', '1')
 DEBUG = str(DEBUG_VALUE).strip().lower() in {'1', 'true', 'yes', 'on'}
 print('DEBUG:', DEBUG)
 
-ALLOWED_HOSTS = []
-ALLOWED_HOSTS.extend(
-    filter(
-        None,
-        os.environ.get('DJANGO_ALLOWED_HOSTS').split(','),
-    )
-)
-print('DJANGO_ALLOWED_HOSTS:', os.environ.get('DJANGO_ALLOWED_HOSTS'))
+ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in ALLOWED_HOSTS_RAW.split(',')
+    if host.strip()
+]
+print('DJANGO_ALLOWED_HOSTS:', ALLOWED_HOSTS_RAW)
 print('ALLOWED_HOSTS:', ALLOWED_HOSTS)
 
 # Application definition
@@ -53,7 +52,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'drf_spectacular',
     'user',
-    'recipe',
+    'network',
 ]
 
 MIDDLEWARE = [

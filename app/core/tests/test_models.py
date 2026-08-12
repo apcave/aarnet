@@ -57,46 +57,38 @@ class ModelTests(TestCase):
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
 
-    def test_create_recipe(self):
-        """Test creating a recipe."""
+    def test_create_site(self):
+        """Test creating a site."""
         user = get_user_model().objects.create_user(
             'test@example.com',
             'testpass123',
         )
-        recipe = models.Recipe.objects.create(
+        site = models.Site.objects.create(
             user=user,
-            title='Sample recipe name',
-            time_minutes=5,
-            price=Decimal('5.50'),
-            description='Sample recipe description',
+            name='Satellite site',
+            description='Primary site',
+            status=models.SiteStatus.PLANNED,
         )
 
-        self.assertEqual(str(recipe), recipe.title)
+        self.assertEqual(str(site), site.name)
+        self.assertEqual(site.get_status_display(), 'Planned')
 
-    def test_create_tag(self):
-        """Test creating a tag."""
+    def test_create_network_with_sites(self):
+        """Test creating a network with sites attached."""
         user = create_user()
-        tag = models.Tag.objects.create(
+        site = models.Site.objects.create(
             user=user,
-            name='tag1',
+            name='Edge site',
+            description='Connected site',
+            status=models.SiteStatus.ACTIVE,
         )
-        self.assertEqual(str(tag), tag.name)
-
-    def test_create_ingredient(self):
-        """Test creating an ingredient."""
-        user = create_user()
-        ingredient = models.Ingredient.objects.create(
+        network = models.Network.objects.create(
             user=user,
-            name='ingredient1',
+            title='Regional network',
+            description='North region',
         )
+        network.sites.add(site)
 
-        self.assertEqual(str(ingredient), ingredient.name)
-
-    @patch('core.models.uuid.uuid4')
-    def test_recipe_file_name_uuid(self, mock_uuid):
-        """Test generating image path."""
-        uuid = 'test-uuid'
-        mock_uuid.return_value = uuid
-        file_path = models.recipe_image_file_path(None, 'myimage.jpg')
-
-        self.assertEqual(file_path, f'uploads/recipe/{uuid}.jpg')
+        self.assertEqual(str(network), network.title)
+        self.assertEqual(network.sites.count(), 1)
+        self.assertEqual(network.sites.first().name, 'Edge site')

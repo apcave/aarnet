@@ -15,11 +15,13 @@ This repo started code repurposed from a Django course. It had the following fea
 * Not stateless will not work in docker container.
 
 
-## Setup
+## Setup and Test
 To setup the DJANGO environment locally.
 On mac OS run:
 ```bash
 ./setup
+./run
+open "http://localhost:8000/api/docs"
 ```
 
-Recipe Application API in Django
+

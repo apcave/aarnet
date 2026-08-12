@@ -1,0 +1,14 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+flake8 .
+
+source .venv/bin/activate
+set -a
+source .env
+set +a
+
+cd app
+python manage.py test
