@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Connection, Device, Interface, Network, Site, SiteStatus
+from core.models import Connection, Device, Interface, InterfaceStatus, Network, Site, SiteStatus
 
 
 class ConnectionApiTests(TestCase):
@@ -160,84 +160,52 @@ class ConnectionApiTests(TestCase):
         connection.refresh_from_db()
         self.assertEqual(connection.name, 'patched-connection')
 
-    def test_connection_status_must_be_connected_or_disconnected(self):
+    def test_connection_status_is_read_only_and_derived_from_interface_states(self):
         network = Network.objects.create(user=self.user, title='Connection status network', description='Validation network')
         site = Site.objects.create(user=self.user, network=network, name='Connection status site', description='Site', status=SiteStatus.ACTIVE)
         device = Device.objects.create(user=self.user, site=site, name='Connection status device', serial_number='CONN-STATUS-001')
         other_device = Device.objects.create(user=self.user, site=site, name='Connection status device 2', serial_number='CONN-STATUS-002')
-        alternate_device = Device.objects.create(user=self.user, site=site, name='Connection status device 3', serial_number='CONN-STATUS-003')
-        start_interface = Interface.objects.create(user=self.user, device=device, name='eth0', speed=1000, status='up')
-        end_interface = Interface.objects.create(user=self.user, device=device, name='eth1', speed=1000, status='up')
-        valid_start_interface = Interface.objects.create(user=self.user, device=other_device, name='eth0', speed=1000, status='up')
-        valid_end_interface = Interface.objects.create(user=self.user, device=other_device, name='eth1', speed=1000, status='up')
-        update_start_interface = Interface.objects.create(user=self.user, device=alternate_device, name='eth0', speed=1000, status='up')
-        update_end_interface = Interface.objects.create(user=self.user, device=alternate_device, name='eth1', speed=1000, status='up')
-        connection = Connection.objects.create(user=self.user, name='status-connection', status='connected', start=start_interface, end=end_interface)
+        start_interface = Interface.objects.create(user=self.user, device=device, name='eth0', speed=1000, status=InterfaceStatus.UP)
+        end_interface = Interface.objects.create(user=self.user, device=device, name='eth1', speed=1000, status=InterfaceStatus.UP)
+        alt_start_interface = Interface.objects.create(user=self.user, device=other_device, name='eth0', speed=1000, status=InterfaceStatus.UP)
+        alt_end_interface = Interface.objects.create(user=self.user, device=other_device, name='eth1', speed=1000, status=InterfaceStatus.UP)
+
+        create_res = self.client.post(
+            reverse('network:connection-list'),
+            {'name': 'auto-status-create', 'status': 'disconnected', 'start': start_interface.id, 'end': end_interface.id},
+            format='json',
+        )
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(create_res.data['status'], 'connected')
+
+        connection = Connection.objects.get(id=create_res.data['id'])
         detail_url = reverse('network:connection-detail', args=[connection.id])
 
-        create_valid = self.client.post(
-            reverse('network:connection-list'),
-            {'name': 'status-valid', 'status': 'connected', 'start': valid_start_interface.id, 'end': valid_end_interface.id},
-            format='json',
-        )
-        self.assertEqual(create_valid.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(create_valid.data['status'], 'connected')
-
-        create_invalid = self.client.post(
-            reverse('network:connection-list'),
-            {'name': 'status-invalid', 'status': 'offline', 'start': update_start_interface.id, 'end': update_end_interface.id},
-            format='json',
-        )
-        self.assertEqual(create_invalid.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(Connection.objects.filter(name='status-invalid').exists())
-
-        create_null = self.client.post(
-            reverse('network:connection-list'),
-            {'name': 'status-null', 'status': None, 'start': update_start_interface.id, 'end': update_end_interface.id},
-            format='json',
-        )
-        self.assertEqual(create_null.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(Connection.objects.filter(name='status-null').exists())
-
-        put_valid = self.client.put(
+        start_interface.status = InterfaceStatus.DOWN
+        start_interface.save(update_fields=['status'])
+        put_res = self.client.put(
             detail_url,
-            {'name': 'status-updated', 'status': 'disconnected', 'start': update_start_interface.id, 'end': update_end_interface.id},
+            {'name': 'auto-status-put', 'status': 'connected', 'start': start_interface.id, 'end': end_interface.id},
             format='json',
         )
-        self.assertEqual(put_valid.status_code, status.HTTP_200_OK)
-        self.assertEqual(put_valid.data['status'], 'disconnected')
+        self.assertEqual(put_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(put_res.data['status'], 'disconnected')
 
-        put_invalid = self.client.put(
-            detail_url,
-            {'name': 'status-put-invalid', 'status': 'unknown', 'start': update_start_interface.id, 'end': update_end_interface.id},
+        start_interface.status = InterfaceStatus.UP
+        start_interface.save(update_fields=['status'])
+        patch_res = self.client.patch(detail_url, {'status': 'disconnected'}, format='json')
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_res.data['status'], 'connected')
+
+        alt_start_interface.status = InterfaceStatus.DOWN
+        alt_start_interface.save(update_fields=['status'])
+        create_disconnected = self.client.post(
+            reverse('network:connection-list'),
+            {'name': 'alt-disconnected', 'status': 'connected', 'start': alt_start_interface.id, 'end': alt_end_interface.id},
             format='json',
         )
-        self.assertEqual(put_invalid.status_code, status.HTTP_400_BAD_REQUEST)
-        connection.refresh_from_db()
-        self.assertEqual(connection.status, 'disconnected')
-
-        put_null = self.client.put(
-            detail_url,
-            {'name': 'status-put-null', 'status': None, 'start': update_start_interface.id, 'end': update_end_interface.id},
-            format='json',
-        )
-        self.assertEqual(put_null.status_code, status.HTTP_400_BAD_REQUEST)
-        connection.refresh_from_db()
-        self.assertEqual(connection.status, 'disconnected')
-
-        patch_valid = self.client.patch(detail_url, {'status': 'disconnected'}, format='json')
-        self.assertEqual(patch_valid.status_code, status.HTTP_200_OK)
-        self.assertEqual(patch_valid.data['status'], 'disconnected')
-
-        patch_invalid = self.client.patch(detail_url, {'status': 'broken'}, format='json')
-        self.assertEqual(patch_invalid.status_code, status.HTTP_400_BAD_REQUEST)
-        connection.refresh_from_db()
-        self.assertEqual(connection.status, 'disconnected')
-
-        patch_null = self.client.patch(detail_url, {'status': None}, format='json')
-        self.assertEqual(patch_null.status_code, status.HTTP_400_BAD_REQUEST)
-        connection.refresh_from_db()
-        self.assertEqual(connection.status, 'disconnected')
+        self.assertEqual(create_disconnected.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(create_disconnected.data['status'], 'disconnected')
 
     def test_connection_invalid_start_or_end_is_rejected_on_create_update_and_patch(self):
         network = Network.objects.create(user=self.user, title='Connection validation network', description='Validation network')

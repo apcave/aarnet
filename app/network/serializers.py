@@ -64,22 +64,72 @@ class ConnectionSerializer(serializers.ModelSerializer):
     """Serializer for the Connection object."""
     start = serializers.PrimaryKeyRelatedField(queryset=Interface.objects.all())
     end = serializers.PrimaryKeyRelatedField(queryset=Interface.objects.all())
+    status = serializers.ReadOnlyField()
 
     class Meta:
         model = Connection
         fields = ('id', 'connection_id', 'name', 'status', 'start', 'end')
-        read_only_fields = ('id', 'connection_id')
+        read_only_fields = ('id', 'connection_id', 'status')
+
+    def validate(self, attrs):
+        start = attrs.get('start', getattr(self.instance, 'start', None))
+        end = attrs.get('end', getattr(self.instance, 'end', None))
+
+        if start is None or end is None:
+            raise serializers.ValidationError({'detail': 'Both start and end interfaces are required.'})
+
+        return attrs
+
+    def _derive_status(self, start, end):
+        if start.status == InterfaceStatus.UP and end.status == InterfaceStatus.UP:
+            return ConnectionStatus.CONNECTED
+        return ConnectionStatus.DISCONNECTED
+
+    def create(self, validated_data):
+        start = validated_data.get('start')
+        end = validated_data.get('end')
+        validated_data.pop('status', None)
+        connection = Connection.objects.create(
+            user=self.context['request'].user,
+            name=validated_data.get('name', ''),
+            start=start,
+            end=end,
+            status=self._derive_status(start, end),
+        )
+        return connection
+
+    def update(self, instance, validated_data):
+        validated_data.pop('status', None)
+        instance = super().update(instance, validated_data)
+        instance.status = self._derive_status(instance.start, instance.end)
+        instance.save(update_fields=['status'])
+        return instance
 
 
 class ConnectionNestedSerializer(serializers.ModelSerializer):
     """Serializer that accepts nested network/site/device/interface payloads."""
     start = serializers.SerializerMethodField()
     end = serializers.SerializerMethodField()
+    status = serializers.ReadOnlyField()
 
     class Meta:
         model = Connection
         fields = ('id', 'connection_id', 'name', 'status', 'start', 'end')
-        read_only_fields = ('id', 'connection_id')
+        read_only_fields = ('id', 'connection_id', 'status')
+
+    def validate(self, attrs):
+        start = attrs.get('start', getattr(self.instance, 'start', None))
+        end = attrs.get('end', getattr(self.instance, 'end', None))
+
+        if start is None or end is None:
+            raise serializers.ValidationError({'detail': 'Both start and end interfaces are required.'})
+
+        return attrs
+
+    def _derive_status(self, start, end):
+        if start.status == InterfaceStatus.UP and end.status == InterfaceStatus.UP:
+            return ConnectionStatus.CONNECTED
+        return ConnectionStatus.DISCONNECTED
 
     def get_start(self, obj):
         return obj.start_id
@@ -186,9 +236,9 @@ class ConnectionNestedSerializer(serializers.ModelSerializer):
         connection = Connection.objects.create(
             user=user,
             name=validated_data.get('name', ''),
-            status=validated_data.get('status', ConnectionStatus.CONNECTED),
             start=start_data,
             end=end_data,
+            status=self._derive_status(start_data, end_data),
         )
         return connection
 
@@ -200,8 +250,8 @@ class ConnectionNestedSerializer(serializers.ModelSerializer):
             instance.end = self._resolve_endpoint(validated_data['end'], user)
         if 'name' in validated_data:
             instance.name = validated_data['name']
-        if 'status' in validated_data:
-            instance.status = validated_data['status']
+        validated_data.pop('status', None)
+        instance.status = self._derive_status(instance.start, instance.end)
         instance.save()
         return instance
 
