@@ -94,13 +94,21 @@ class Device(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     site = models.ForeignKey(
         Site,
         on_delete=models.CASCADE,
         related_name='devices',
     )
     serial_number = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['site', 'name'],
+                name='unique_device_name_per_site',
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -168,6 +176,14 @@ class Connection(models.Model):
         on_delete=models.CASCADE,
         related_name='connections_as_end',
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['start', 'end'],
+                name='unique_connection_between_interfaces',
+            )
+        ]
 
     def __str__(self):
         return f"{self.start} <-> {self.end}"

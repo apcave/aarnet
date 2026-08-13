@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+rm app/db.sqlite3
+rm app/migrations/00*
+
+source .venv/bin/activate
+set -a
+source .env
+set +a
+
+cd app
+python manage.py check
+python manage.py migrate
+python -m app.create_superuser

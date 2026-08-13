@@ -26,8 +26,30 @@ class PublicUserApiTests(TestCase):
         """Set up the test."""
         self.client = APIClient()
 
-    def test_create_user_success(self):
-        """Test creating a user successful."""
+    def test_create_user_requires_admin(self):
+        """Test that unauthenticated users cannot create accounts."""
+        payload = {
+            'email': 'test@example.com',
+            'password': 'testpass123',
+            'name': 'Test User',
+        }
+        res = self.client.post(CREATE_USER_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        user_exists = get_user_model().objects.filter(email=payload['email']).exists()
+        self.assertFalse(user_exists)
+
+    def test_admin_can_create_user(self):
+        """Test that admin users can create a user account."""
+        admin_user = create_user(
+            email='admin@example.com',
+            password='adminpass123',
+            name='Admin User',
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(user=admin_user)
+
         payload = {
             'email': 'test@example.com',
             'password': 'testpass123',
@@ -42,6 +64,15 @@ class PublicUserApiTests(TestCase):
 
     def test_user_with_email_exists_error(self):
         """Test error returned if user with email exists."""
+        admin_user = create_user(
+            email='admin@example.com',
+            password='adminpass123',
+            name='Admin User',
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(user=admin_user)
+
         payload = {
             'email': 'test@example.com',
             'password': 'testpass123',
@@ -54,6 +85,15 @@ class PublicUserApiTests(TestCase):
 
     def test_password_too_short_error(self):
         """Test error returned if password is too short."""
+        admin_user = create_user(
+            email='admin@example.com',
+            password='adminpass123',
+            name='Admin User',
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(user=admin_user)
+
         payload = {
             'email': 'test@example.com',
             'password': 'pw',

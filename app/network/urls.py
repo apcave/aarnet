@@ -9,8 +9,12 @@ from . import views
 
 
 router = DefaultRouter()
-router.register('sites', views.SiteViewSet)
 router.register('networks', views.NetworkViewSet)
+router.register('sites', views.SiteViewSet)
+router.register('devices', views.DeviceViewSet)
+router.register('interfaces', views.InterfaceViewSet)
+router.register('connections', views.ConnectionViewSet)
+router.register('connections-full', views.ConnectionNestedViewSet, basename='connection-full')
 
 app_name = 'network'
 

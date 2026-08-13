@@ -147,11 +147,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/static/'
-MEDIA_URL = '/static/media/'
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
 
-MEDIA_ROOT = '/vol/web/media'
-STATIC_ROOT = '/vol/web/static'
+BASE_DIR = Path(__file__).resolve().parent.parent
+MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
@@ -162,6 +163,7 @@ AUTH_USER_MODEL = 'core.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'EXCEPTION_HANDLER': 'app.exceptions.custom_exception_handler',
 }
 
 SPECTACULAR_SETTINGS = {

@@ -3,4 +3,18 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -r requirements.txt
+
+rm -f .env
 cp .env.sample .env
+
+rm app/db.sqlite3
+rm app/migrations/00*
+
+set -a
+source .env
+set +a
+cd app
+python manage.py check
+python manage.py migrate
+python -m app.create_superuser
+python manage.py collectstatic --noinput

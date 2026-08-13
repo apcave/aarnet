@@ -1,0 +1,229 @@
+{
+  "networks": [
+    "Pond",
+    "River",
+    "Ocean",
+    "Lagoon",
+    "Estuary",
+    "Delta",
+    "Bay",
+    "Cove",
+    "Current",
+    "Channel",
+    "Reef",
+    "Tidepool",
+    "Marsh",
+    "Strait",
+    "Inlet"
+  ],
+  "sites": [
+    "Sable Quay",
+    "Corsair Point",
+    "Knife Reef",
+    "Fisherman's Rest",
+    "Blackhook Wharf",
+    "Blood Bay",
+    "Stormglass Cove",
+    "Driftmark Dock",
+    "Masthead Point",
+    "Anchor's Wake",
+    "Brinewatch Post",
+    "Crow's Nest",
+    "Tidebreaker Fort",
+    "Gull's Lantern",
+    "Jolly Wreck"
+  ],
+  "devices": [
+    "Blackfin",
+    "Bluegill",
+    "Barracuda",
+    "Bass",
+    "Bullhead",
+    "Carp",
+    "Catfish",
+    "Cod",
+    "Crappie",
+    "Dory",
+    "Eel",
+    "Flounder",
+    "Garfish",
+    "Goldfish",
+    "Grouper",
+    "Haddock",
+    "Hake",
+    "Halibut",
+    "Herring",
+    "Jackfish",
+    "Kelpper",
+    "Kingfish",
+    "Lingcod",
+    "Mackerel",
+    "Marlin",
+    "Mullet",
+    "Perch",
+    "Pike",
+    "Pompano",
+    "Prawnfish",
+    "Redfish",
+    "Salmon",
+    "Sardine",
+    "Seabass",
+    "Shark",
+    "Snapper",
+    "Sole",
+    "Sturgeon",
+    "Swordfish",
+    "Tilapia",
+    "Trout",
+    "Tuna",
+    "Walleye",
+    "Whiting",
+    "Yellowtail"
+  ],
+  "interfaces": [
+    "eth0",
+    "eth1",
+    "eth2",
+    "wlan0",
+    "wlan1",
+    "lan0",
+    "lan1",
+    "bond0",
+    "tap0",
+    "veth0",
+    "veth1",
+    "br0",
+    "br1",
+    "lo",
+    "eno1"
+  ],
+  "connections": [
+    "Braid Pro 12lb",
+    "Mono Expert 15lb",
+    "Fluoro Blue 20lb",
+    "Nano Tackle 25lb",
+    "Graphite Plus 30lb",
+    "Deep Water 35lb",
+    "Coastal Elite 40lb",
+    "Surf Master 50lb",
+    "Tide Runner 60lb",
+    "Offshore Flex 80lb",
+    "Bluewater Pro 100lb",
+    "Cutter Wave 12lb",
+    "Drift Run 18lb",
+    "Long Cast 22lb",
+    "Reel Strong 28lb",
+    "Channel Line 32lb",
+    "Harbor Guard 45lb",
+    "Jetty X 55lb",
+    "Storm Grip 70lb",
+    "Current Edge 90lb"
+  ],
+  "users": [
+    {
+      "first_name": "Alden",
+      "last_name": "Blackfin",
+      "username": "alden.blackfin",
+      "email": "alden.blackfin@example.com",
+      "password": "Cutlass!2026"
+    },
+    {
+      "first_name": "Briar",
+      "last_name": "Rook",
+      "username": "briar.rook",
+      "email": "briar.rook@example.com",
+      "password": "Stormwake@2026"
+    },
+    {
+      "first_name": "Cask",
+      "last_name": "Harpoon",
+      "username": "cask.harpoon",
+      "email": "cask.harpoon@example.com",
+      "password": "Redreef#2026"
+    },
+    {
+      "first_name": "Dorian",
+      "last_name": "Morrow",
+      "username": "dorian.morrow",
+      "email": "dorian.morrow@example.com",
+      "password": "Brine$2026"
+    },
+    {
+      "first_name": "Edda",
+      "last_name": "Tidebreaker",
+      "username": "edda.tidebreaker",
+      "email": "edda.tidebreaker@example.com",
+      "password": "Jolly!2026"
+    },
+    {
+      "first_name": "Fenn",
+      "last_name": "Skullhook",
+      "username": "fenn.skullhook",
+      "email": "fenn.skullhook@example.com",
+      "password": "Harbor@2026"
+    },
+    {
+      "first_name": "Garrick",
+      "last_name": "Riptide",
+      "username": "garrick.riptide",
+      "email": "garrick.riptide@example.com",
+      "password": "Deadwater#2026"
+    },
+    {
+      "first_name": "Harlow",
+      "last_name": "Crowsbane",
+      "username": "harlow.crowsbane",
+      "email": "harlow.crowsbane@example.com",
+      "password": "Saltwind$2026"
+    },
+    {
+      "first_name": "Iona",
+      "last_name": "Fang",
+      "username": "iona.fang",
+      "email": "iona.fang@example.com",
+      "password": "Moonlit!2026"
+    },
+    {
+      "first_name": "Jory",
+      "last_name": "Brine",
+      "username": "jory.brine",
+      "email": "jory.brine@example.com",
+      "password": "Tideglass@2026"
+    },
+    {
+      "first_name": "Kestrel",
+      "last_name": "Sable",
+      "username": "kestrel.sable",
+      "email": "kestrel.sable@example.com",
+      "password": "Cutlass#2026"
+    },
+    {
+      "first_name": "Lark",
+      "last_name": "Whisper",
+      "username": "lark.whisper",
+      "email": "lark.whisper@example.com",
+      "password": "Blackwater$2026"
+    },
+    {
+      "first_name": "Mara",
+      "last_name": "Stormcrow",
+      "username": "mara.stormcrow",
+      "email": "mara.stormcrow@example.com",
+      "password": "Gulls!2026"
+    },
+    {
+      "first_name": "Ned",
+      "last_name": "Bramble",
+      "username": "ned.bramble",
+      "email": "ned.bramble@example.com",
+      "password": "Chartroom@2026"
+    },
+    {
+      "first_name": "Orla",
+      "last_name": "Kettle",
+      "username": "orla.kettle",
+      "email": "orla.kettle@example.com",
+      "password": "Raven#2026"
+    }
+  ]
+}
