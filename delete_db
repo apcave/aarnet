@@ -1,15 +1,24 @@
 #!/bin/bash
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-rm app/db.sqlite3
-rm app/migrations/00*
+rm -f app/db.sqlite3
+find app -path "*/migrations/*.py" -not -name "__init__.py" -delete
 
-source .venv/bin/activate
-set -a
-source .env
-set +a
+if [ -f .venv/bin/activate ]; then
+  source .venv/bin/activate
+else
+  echo "Virtual environment not found at .venv" >&2
+  exit 1
+fi
+
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
 
 cd app
 python manage.py check

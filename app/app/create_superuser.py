@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 import django
+from django.core.management import call_command
+from django.db import connection
 
 
 def load_env(path: Path | None = None) -> None:
@@ -21,6 +23,10 @@ def load_env(path: Path | None = None) -> None:
 def create_superuser() -> None:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
     django.setup()
+
+    tables = connection.introspection.table_names()
+    if 'core_user' not in tables:
+        call_command('migrate', verbosity=0, run_syncdb=True)
 
     from django.contrib.auth import get_user_model
 
