@@ -182,3 +182,4 @@ app/*/*/*/__pycache__/
 .env/
 .venv/
 venv/
+app/staticfiles/
