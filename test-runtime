@@ -1,0 +1,5 @@
+#!/bin/bash
+
+./delete_db
+cd run_time_tests
+python3 stochastic_load_test.py --parallel 1 --error-rate 0.1

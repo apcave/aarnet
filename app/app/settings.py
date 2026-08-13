@@ -9,10 +9,26 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+import logging
 import os
 from pathlib import Path
 
-print(os.environ)
+
+class ColouredFormatter(logging.Formatter):
+    """Simple ANSI-colored logging formatter for local debugging."""
+    COLOURS = {
+        'DEBUG': '\033[36m',
+        'INFO': '\033[32m',
+        'WARNING': '\033[33m',
+        'ERROR': '\033[31m',
+        'CRITICAL': '\033[1;31m',
+    }
+
+    def format(self, record):
+        colour = self.COLOURS.get(record.levelname, '\033[0m')
+        record.levelname = f'{colour}{record.levelname}\033[0m'
+        record.msg = f'{colour}{record.msg}\033[0m'
+        return super().format(record)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +38,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key-for-local-use')
-print('SECRET_KEY:', SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG_VALUE = os.environ.get('DJANGO_DEBUG', '1')
 DEBUG = str(DEBUG_VALUE).strip().lower() in {'1', 'true', 'yes', 'on'}
-print('DEBUG:', DEBUG)
 
 ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '*')
 ALLOWED_HOSTS = [
@@ -35,8 +49,6 @@ ALLOWED_HOSTS = [
     for host in ALLOWED_HOSTS_RAW.split(',')
     if host.strip()
 ]
-print('DJANGO_ALLOWED_HOSTS:', ALLOWED_HOSTS_RAW)
-print('ALLOWED_HOSTS:', ALLOWED_HOSTS)
 
 # Application definition
 
@@ -108,7 +120,6 @@ else:
             'PASSWORD': os.environ.get('DB_PASS'),
         }
     }
-print('DATABASES:', DATABASES)
 
 
 # Password validation
@@ -168,4 +179,42 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'colored': {
+            '()': 'app.settings.ColouredFormatter',
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+        },
+        'plain': {
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'colored',
+            'level': 'DEBUG',
+        },
+    },
+    'loggers': {
+        'network': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'app': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
