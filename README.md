@@ -19,6 +19,8 @@ Runtime tests exercise the application under realistic traffic and load conditio
 
 The data model uses cascading deletes for dependent records so removing a parent object also cleans up related resources, while validation rules enforce topological integrity such as requiring an interface to be attached to an existing device and preventing invalid cross-device or duplicate relationships.
 
+An additional Network abstraction was introduced to provide a higher-level grouping layer above Site records, reflecting the real-world hierarchy of network, site, device, interface, and connection within the application domain.
+
 Connection status is derived from the relationship state rather than being freely editable by the client, and the system enforces data restrictions to maintain valid network topology and prevent inconsistent records.
 
 ## Project Scripts
