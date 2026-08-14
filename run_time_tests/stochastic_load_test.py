@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """Stochastic load test for the network APIs.
 
-This script creates a large but configurable multi-user load profile to exercise
-all of the API endpoints in the project, including user auth, network creation,
-site/device/interface management, and connection creation using the nested
-connection endpoint.
+This script creates a large but configurable multi-user load profile to
+exercise all of the API endpoints in the project, including user auth,
+network creation, site/device/interface management, and connection
+creation using the nested connection endpoint.
 
 Typical usage:
-  python run_time_tests/stochastic_load_test.py --base-url http://localhost:8000
-  python run_time_tests/stochastic_load_test.py --base-url http://localhost:8000 --users 20 --parallel 8
+  python run_time_tests/stochastic_load_test.py \
+      --base-url http://localhost:8000
+  python run_time_tests/stochastic_load_test.py \
+      --base-url http://localhost:8000 --users 20 --parallel 8
 
-The default targets are sized roughly to the scale of Australias higher-education
-network footprint: about 43 universities and a similar order of magnitude for
-campus/site objects, with proportional device, interface and connection counts.
+The default targets are sized roughly to the scale of Australia's
+higher-education network footprint: about 43 universities and a similar
+order of magnitude for campus/site objects, with proportional device,
+interface and connection counts.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,7 +26,6 @@ import os
 import random
 import re
 import sys
-import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -106,12 +109,23 @@ class ApiError(RuntimeError):
 
 
 class ApiClient:
-    def __init__(self, base_url: str, debug_payloads: bool = False, halt_on_status: int | None = None):
+    def __init__(
+        self,
+        base_url: str,
+        debug_payloads: bool = False,
+        halt_on_status: int | None = None,
+    ):
         self.base_url = base_url.rstrip("/") + "/"
         self.debug_payloads = debug_payloads
         self.halt_on_status = halt_on_status
 
-    def _request(self, method: str, path: str, payload: dict | None = None, token: str | None = None):
+    def _request(
+        self,
+        method: str,
+        path: str,
+        payload: dict | None = None,
+        token: str | None = None,
+    ):
         url = urljoin(self.base_url, path)
         body = None
         headers = {"Accept": "application/json"}
@@ -140,7 +154,13 @@ class ApiClient:
                     print(f"Response status: {resp.status}")
                     if raw:
                         try:
-                            print(json.dumps(json.loads(raw.decode("utf-8")), indent=2, sort_keys=True))
+                            print(
+                                json.dumps(
+                                    json.loads(raw.decode("utf-8")),
+                                    indent=2,
+                                    sort_keys=True,
+                                )
+                            )
                         except Exception:
                             print(raw.decode("utf-8", errors="replace"))
                     else:
@@ -158,12 +178,21 @@ class ApiClient:
             if self.debug_payloads:
                 print(f"Response status: {exc.code}")
                 print(detail)
-            if self.halt_on_status is not None and exc.code == self.halt_on_status:
-                print(f"\nHALT requested on status {exc.code}: {method} {path}")
+            if (
+                self.halt_on_status is not None
+                and exc.code == self.halt_on_status
+            ):
+                print(
+                    f"\nHALT requested on status {exc.code}: {method} {path}"
+                )
                 raise SystemExit(message)
             raise ApiError(message) from exc
-        except Exception as exc:  # pragma: no cover - proxy/connection failures
-            raise ApiError(f"Request failed for {method} {path}: {exc}") from exc
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - proxy/connection failures
+            raise ApiError(
+                f"Request failed for {method} {path}: {exc}"
+            ) from exc
 
     def health_check(self):
         return self._request("GET", "api/health-check/")
@@ -172,7 +201,9 @@ class ApiClient:
         payload = {"name": name, "email": email, "password": password}
         return self._request("POST", "api/user/create/", payload)
 
-    def create_user_as_admin(self, token: str, name: str, email: str, password: str):
+    def create_user_as_admin(
+        self, token: str, name: str, email: str, password: str
+    ):
         payload = {"name": name, "email": email, "password": password}
         return self._request("POST", "api/user/create/", payload, token=token)
 
@@ -187,71 +218,186 @@ class ApiClient:
         return self._request("GET", "api/network/networks/", token=token)
 
     def create_network(self, token: str, title: str, description: str = ""):
-        return self._request("POST", "api/network/networks/", {"title": title, "description": description}, token=token)
+        return self._request(
+            "POST",
+            "api/network/networks/",
+            {"title": title, "description": description},
+            token=token,
+        )
 
-    def update_network(self, token: str, network_id: int, title: str, description: str = ""):
-        return self._request("PATCH", f"api/network/networks/{network_id}/", {"title": title, "description": description}, token=token)
+    def update_network(
+        self, token: str, network_id: int, title: str, description: str = ""
+    ):
+        return self._request(
+            "PATCH",
+            f"api/network/networks/{network_id}/",
+            {"title": title, "description": description},
+            token=token,
+        )
 
     def delete_network(self, token: str, network_id: int):
-        return self._request("DELETE", f"api/network/networks/{network_id}/", token=token)
+        return self._request(
+            "DELETE", f"api/network/networks/{network_id}/", token=token
+        )
 
     def list_sites(self, token: str):
         return self._request("GET", "api/network/sites/", token=token)
 
-    def create_site(self, token: str, network_id: int, name: str, description: str = ""):
-        payload = {"network": network_id, "name": name, "description": description, "status": "active"}
-        return self._request("POST", "api/network/sites/", payload, token=token)
+    def create_site(
+        self, token: str, network_id: int, name: str, description: str = ""
+    ):
+        payload = {
+            "network": network_id,
+            "name": name,
+            "description": description,
+            "status": "active",
+        }
+        return self._request(
+            "POST", "api/network/sites/", payload, token=token
+        )
 
-    def update_site(self, token: str, site_id: int, network_id: int, name: str, description: str = ""):
-        payload = {"network": network_id, "name": name, "description": description, "status": "active"}
-        return self._request("PATCH", f"api/network/sites/{site_id}/", payload, token=token)
+    def update_site(
+        self,
+        token: str,
+        site_id: int,
+        network_id: int,
+        name: str,
+        description: str = "",
+    ):
+        payload = {
+            "network": network_id,
+            "name": name,
+            "description": description,
+            "status": "active",
+        }
+        return self._request(
+            "PATCH", f"api/network/sites/{site_id}/", payload, token=token
+        )
 
     def delete_site(self, token: str, site_id: int):
-        return self._request("DELETE", f"api/network/sites/{site_id}/", token=token)
+        return self._request(
+            "DELETE", f"api/network/sites/{site_id}/", token=token
+        )
 
     def list_devices(self, token: str):
         return self._request("GET", "api/network/devices/", token=token)
 
-    def create_device(self, token: str, site_id: int, name: str, serial_number: str):
-        payload = {"site": site_id, "name": name, "serial_number": serial_number}
-        return self._request("POST", "api/network/devices/", payload, token=token)
+    def create_device(
+        self, token: str, site_id: int, name: str, serial_number: str
+    ):
+        payload = {
+            "site": site_id,
+            "name": name,
+            "serial_number": serial_number,
+        }
+        return self._request(
+            "POST", "api/network/devices/", payload, token=token
+        )
 
-    def update_device(self, token: str, device_id: int, site_id: int, name: str, serial_number: str):
-        payload = {"site": site_id, "name": name, "serial_number": serial_number}
-        return self._request("PATCH", f"api/network/devices/{device_id}/", payload, token=token)
+    def update_device(
+        self,
+        token: str,
+        device_id: int,
+        site_id: int,
+        name: str,
+        serial_number: str,
+    ):
+        payload = {
+            "site": site_id,
+            "name": name,
+            "serial_number": serial_number,
+        }
+        return self._request(
+            "PATCH", f"api/network/devices/{device_id}/", payload, token=token
+        )
 
     def delete_device(self, token: str, device_id: int):
-        return self._request("DELETE", f"api/network/devices/{device_id}/", token=token)
+        return self._request(
+            "DELETE", f"api/network/devices/{device_id}/", token=token
+        )
 
     def list_interfaces(self, token: str):
         return self._request("GET", "api/network/interfaces/", token=token)
 
-    def create_interface(self, token: str, device_id: int, name: str, speed: int):
-        payload = {"device": device_id, "name": name, "speed": speed, "status": "up"}
-        return self._request("POST", "api/network/interfaces/", payload, token=token)
+    def create_interface(
+        self, token: str, device_id: int, name: str, speed: int
+    ):
+        payload = {
+            "device": device_id,
+            "name": name,
+            "speed": speed,
+            "status": "up",
+        }
+        return self._request(
+            "POST", "api/network/interfaces/", payload, token=token
+        )
 
-    def update_interface(self, token: str, interface_id: int, device_id: int, name: str, speed: int):
-        payload = {"device": device_id, "name": name, "speed": speed, "status": "up"}
-        return self._request("PATCH", f"api/network/interfaces/{interface_id}/", payload, token=token)
+    def update_interface(
+        self,
+        token: str,
+        interface_id: int,
+        device_id: int,
+        name: str,
+        speed: int,
+    ):
+        payload = {
+            "device": device_id,
+            "name": name,
+            "speed": speed,
+            "status": "up",
+        }
+        return self._request(
+            "PATCH",
+            f"api/network/interfaces/{interface_id}/",
+            payload,
+            token=token,
+        )
 
     def delete_interface(self, token: str, interface_id: int):
-        return self._request("DELETE", f"api/network/interfaces/{interface_id}/", token=token)
+        return self._request(
+            "DELETE", f"api/network/interfaces/{interface_id}/", token=token
+        )
 
     def list_connections(self, token: str):
         return self._request("GET", "api/network/connections/", token=token)
 
-    def create_connection(self, token: str, start_id: int, end_id: int, name: str, status: str = "connected"):
-        payload = {"name": name, "status": status, "start": start_id, "end": end_id}
-        return self._request("POST", "api/network/connections/", payload, token=token)
+    def create_connection(
+        self,
+        token: str,
+        start_id: int,
+        end_id: int,
+        name: str,
+        status: str = "connected",
+    ):
+        payload = {
+            "name": name,
+            "status": status,
+            "start": start_id,
+            "end": end_id,
+        }
+        return self._request(
+            "POST", "api/network/connections/", payload, token=token
+        )
 
     def create_connection_full(self, token: str, payload: dict):
-        return self._request("POST", "api/network/connections-full/", payload, token=token)
+        return self._request(
+            "POST", "api/network/connections-full/", payload, token=token
+        )
 
-    def update_connection_full(self, token: str, connection_id: int, payload: dict):
-        return self._request("PATCH", f"api/network/connections-full/{connection_id}/", payload, token=token)
+    def update_connection_full(
+        self, token: str, connection_id: int, payload: dict
+    ):
+        return self._request(
+            "PATCH",
+            f"api/network/connections-full/{connection_id}/",
+            payload,
+            token=token,
+        )
 
     def delete_connection(self, token: str, connection_id: int):
-        return self._request("DELETE", f"api/network/connections/{connection_id}/", token=token)
+        return self._request(
+            "DELETE", f"api/network/connections/{connection_id}/", token=token
+        )
 
 
 def split_total(total: int, parts: int):
@@ -292,7 +438,11 @@ def safe_call(name: str, operation, *args, **kwargs):
     except Exception as exc:
         if isinstance(exc, ApiError):
             match = re.search(r"HTTP (\d{3})", str(exc))
-            if halt_on_status is not None and match and int(match.group(1)) == halt_on_status:
+            if (
+                halt_on_status is not None
+                and match
+                and int(match.group(1)) == halt_on_status
+            ):
                 raise SystemExit(str(exc)) from exc
         return {"ok": False, "error": str(exc), "name": name}
 
@@ -307,7 +457,9 @@ def find_network_by_title(client: ApiClient, token: str, title: str):
     return None
 
 
-def find_site_by_name(client: ApiClient, token: str, network_id: int, name: str):
+def find_site_by_name(
+    client: ApiClient, token: str, network_id: int, name: str
+):
     result = safe_call("list_sites", client.list_sites, token)
     if not result["ok"]:
         return None
@@ -317,7 +469,9 @@ def find_site_by_name(client: ApiClient, token: str, network_id: int, name: str)
     return None
 
 
-def inject_invalid_payload(rng: random.Random, target: str, base_payload: dict | None = None):
+def inject_invalid_payload(
+    rng: random.Random, target: str, base_payload: dict | None = None
+):
     if base_payload is None:
         base_payload = {}
     payload = dict(base_payload)
@@ -360,18 +514,21 @@ def create_user_session(
     halt_on_status: int | None = None,
     single_worker: bool = False,
 ):
-    client = ApiClient(base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status)
+    client = ApiClient(
+        base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status
+    )
     errors = []
 
-    
     user = get_user_data_json(seed_users, index)
 
-    login_result = safe_call("login", client.login, user["email"], user["password"])
+    login_result = safe_call(
+        "login", client.login, user["email"], user["password"]
+    )
     if login_result["ok"]:
         token = login_result["value"].get("token")
         if token is None:
             raise RuntimeError("login response missing token")
-  
+
         me_result = safe_call("me", client.me, token)
         if me_result["ok"]:
             return {
@@ -387,13 +544,21 @@ def create_user_session(
     admin_email, env_admin_password = resolve_admin_credentials()
     admin_token = None
     if not admin_email or not env_admin_password:
-        raise RuntimeError("Admin credentials not found in environment variables or .env file")
-    
-    admin_client = ApiClient(base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status)
-    admin_login_result = safe_call("login_admin", admin_client.login, admin_email, env_admin_password)
+        raise RuntimeError(
+            "Admin credentials not found in environment variables or .env file"
+        )
+
+    admin_client = ApiClient(
+        base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status
+    )
+    admin_login_result = safe_call(
+        "login_admin", admin_client.login, admin_email, env_admin_password
+    )
     if not admin_login_result["ok"]:
-        raise RuntimeError(f"Admin login failed: {admin_login_result['error']}")
-    
+        raise RuntimeError(
+            f"Admin login failed: {admin_login_result['error']}"
+        )
+
     admin_token = admin_login_result["value"].get("token")
     if not admin_token:
         raise RuntimeError("admin login response missing token")
@@ -408,20 +573,54 @@ def create_user_session(
     )
     if not create_result["ok"]:
         raise RuntimeError(f"User creation failed: {create_result['error']}")
-    
-    login_result = safe_call("login", client.login, user["email"], user["password"])
+
+    login_result = safe_call(
+        "login", client.login, user["email"], user["password"]
+    )
     if not login_result["ok"]:
-        return {"index": index, "email": user["email"], "token": None, "password": user["password"], "name": user["name"], "created": False, "errors": errors + [login_result["error"]]}
+        return {
+            "index": index,
+            "email": user["email"],
+            "token": None,
+            "password": user["password"],
+            "name": user["name"],
+            "created": False,
+            "errors": errors + [login_result["error"]],
+        }
 
     token = login_result["value"].get("token")
     if token is None:
-        return {"index": index, "email": user["email"], "token": None, "password": user["password"], "name": user["name"], "created": False, "errors": errors + ["login response missing token"]}
+        return {
+            "index": index,
+            "email": user["email"],
+            "token": None,
+            "password": user["password"],
+            "name": user["name"],
+            "created": False,
+            "errors": errors + ["login response missing token"],
+        }
 
     me_result = safe_call("me", client.me, token)
     if not me_result["ok"]:
-        return {"index": index, "email": user["email"], "token": token, "password": user["password"], "name": user["name"], "created": True, "errors": errors + [me_result["error"]]}
+        return {
+            "index": index,
+            "email": user["email"],
+            "token": token,
+            "password": user["password"],
+            "name": user["name"],
+            "created": True,
+            "errors": errors + [me_result["error"]],
+        }
 
-    return {"index": index, "email": user["email"], "token": token, "password": user["password"], "name": user["name"], "created": True, "errors": []}
+    return {
+        "index": index,
+        "email": user["email"],
+        "token": token,
+        "password": user["password"],
+        "name": user["name"],
+        "created": True,
+        "errors": [],
+    }
 
 
 def exercise_user_workload(
@@ -444,14 +643,25 @@ def exercise_user_workload(
     site_pool = seed["sites"]
     device_pool = seed["devices"]
     interface_pool = seed["interfaces"]
-    rng = random.Random(sum(ord(ch) for ch in user_name) + network_budget + site_budget)
+    rng = random.Random(
+        sum(ord(ch) for ch in user_name) + network_budget + site_budget
+    )
 
     for network_index in range(network_budget):
         title = f"{network_pool[network_index % len(network_pool)]}"
-        payload = {"title": title, "description": f"Autogenerated network for {user_name}."}
+        payload = {
+            "title": title,
+            "description": f"Autogenerated network for {user_name}.",
+        }
         if rng.random() < error_rate:
             payload = inject_invalid_payload(rng, "network", payload)
-        network_result = safe_call("create_network", client.create_network, token, payload["title"], payload.get("description", ""))
+        network_result = safe_call(
+            "create_network",
+            client.create_network,
+            token,
+            payload["title"],
+            payload.get("description", ""),
+        )
         if not network_result["ok"]:
             existing = find_network_by_title(client, token, payload["title"])
             if existing is None:
@@ -467,18 +677,47 @@ def exercise_user_workload(
         if rng.random() < error_rate:
             update_payload = {"title": "", "description": "Updated network"}
         else:
-            update_payload = {"title": f"{title}-patched", "description": "Maintained network"}
-        safe_call("update_network", client.update_network, token, network["id"], update_payload["title"], update_payload["description"])
+            update_payload = {
+                "title": f"{title}-patched",
+                "description": "Maintained network",
+            }
+        safe_call(
+            "update_network",
+            client.update_network,
+            token,
+            network["id"],
+            update_payload["title"],
+            update_payload["description"],
+        )
 
         site_iterations = max(1, site_budget // max(1, network_budget))
         for site_index in range(site_iterations):
-            site_name = f"{site_pool[(network_index * 3 + site_index) % len(site_pool)]}"
-            site_payload = {"network": network["id"], "name": site_name, "description": f"Campus for {title}", "status": "active"}
+            site_name = f"{site_pool[(network_index *
+                                      3 +
+                                      site_index) %
+                                     len(site_pool)]}"
+            site_payload = {
+                "network": network["id"],
+                "name": site_name,
+                "description": f"Campus for {title}",
+                "status": "active",
+            }
             if rng.random() < error_rate:
-                site_payload = inject_invalid_payload(rng, "site", site_payload)
-            site_result = safe_call("create_site", client.create_site, token, site_payload.get("network", network["id"]), site_payload["name"], site_payload.get("description", ""))
+                site_payload = inject_invalid_payload(
+                    rng, "site", site_payload
+                )
+            site_result = safe_call(
+                "create_site",
+                client.create_site,
+                token,
+                site_payload.get("network", network["id"]),
+                site_payload["name"],
+                site_payload.get("description", ""),
+            )
             if not site_result["ok"]:
-                existing_site = find_site_by_name(client, token, network["id"], site_payload["name"])
+                existing_site = find_site_by_name(
+                    client, token, network["id"], site_payload["name"]
+                )
                 if existing_site is None:
                     error_count += 1
                     continue
@@ -488,42 +727,106 @@ def exercise_user_workload(
             created_sites.append(site)
             safe_call("list_sites", client.list_sites, token)
 
-            safe_call("update_site", client.update_site, token, site["id"], network["id"], f"{site_name}-updated", "Campus maintained")
+            safe_call(
+                "update_site",
+                client.update_site,
+                token,
+                site["id"],
+                network["id"],
+                f"{site_name}-updated",
+                "Campus maintained",
+            )
 
             for device_index in range(2):
-                device_name = f"{device_pool[(network_index * 5 + site_index * 3 + device_index) % len(device_pool)]}"
+                device_name = f"{device_pool[(network_index *
+                                              5 +
+                                              site_index *
+                                              3 +
+                                              device_index) %
+                                             len(device_pool)]}"
                 serial = f"SER-{uuid.uuid4().hex[:12]}"
-                device_payload = {"site": site["id"], "name": device_name, "serial_number": serial}
+                device_payload = {
+                    "site": site["id"],
+                    "name": device_name,
+                    "serial_number": serial,
+                }
                 if rng.random() < error_rate:
-                    device_payload = inject_invalid_payload(rng, "device", device_payload)
-                device_result = safe_call("create_device", client.create_device, token, device_payload.get("site", site["id"]), device_payload["name"], device_payload.get("serial_number", serial))
+                    device_payload = inject_invalid_payload(
+                        rng, "device", device_payload
+                    )
+                device_result = safe_call(
+                    "create_device",
+                    client.create_device,
+                    token,
+                    device_payload.get("site", site["id"]),
+                    device_payload["name"],
+                    device_payload.get("serial_number", serial),
+                )
                 if not device_result["ok"]:
                     error_count += 1
                     continue
                 device = device_result["value"]
                 created_devices.append(device)
                 safe_call("list_devices", client.list_devices, token)
-                safe_call("update_device", client.update_device, token, device["id"], site["id"], f"{device_name}-patched", f"SER-{uuid.uuid4().hex[:12]}")
+                safe_call(
+                    "update_device",
+                    client.update_device,
+                    token,
+                    device["id"],
+                    site["id"],
+                    f"{device_name}-patched",
+                    f"SER-{uuid.uuid4().hex[:12]}",
+                )
 
                 for iface_index in range(2):
-                    iface_name = f"{interface_pool[(network_index * 4 + site_index * 2 + iface_index) % len(interface_pool)]}"
-                    iface_payload = {"device": device["id"], "name": iface_name, "speed": 1000 + (iface_index * 250), "status": "up"}
+                    iface_name = f"{interface_pool[(network_index *
+                                                    4 +
+                                                    site_index *
+                                                    2 +
+                                                    iface_index) %
+                                                   len(interface_pool)]}"
+                    iface_payload = {
+                        "device": device["id"],
+                        "name": iface_name,
+                        "speed": 1000 + (iface_index * 250),
+                        "status": "up",
+                    }
                     if rng.random() < error_rate:
-                        iface_payload = inject_invalid_payload(rng, "interface", iface_payload)
-                    iface_result = safe_call("create_interface", client.create_interface, token, iface_payload.get("device", device["id"]), iface_payload["name"], iface_payload.get("speed", 1000))
+                        iface_payload = inject_invalid_payload(
+                            rng, "interface", iface_payload
+                        )
+                    iface_result = safe_call(
+                        "create_interface",
+                        client.create_interface,
+                        token,
+                        iface_payload.get("device", device["id"]),
+                        iface_payload["name"],
+                        iface_payload.get("speed", 1000),
+                    )
                     if not iface_result["ok"]:
                         error_count += 1
                         continue
                     iface = iface_result["value"]
                     created_interfaces.append(iface)
                     safe_call("list_interfaces", client.list_interfaces, token)
-                    safe_call("update_interface", client.update_interface, token, iface["id"], device["id"], f"{iface_name}-patched", 2000 + (iface_index * 250))
+                    safe_call(
+                        "update_interface",
+                        client.update_interface,
+                        token,
+                        iface["id"],
+                        device["id"],
+                        f"{iface_name}-patched",
+                        2000 + (iface_index * 250),
+                    )
 
                     if len(created_interfaces) >= 2:
                         first_iface = created_interfaces[-2]
                         second_iface = created_interfaces[-1]
                         nested_payload = {
-                            "name": f"{first_iface['name']}-{second_iface['name']}",
+                            "name": (
+                                f"{first_iface['name']}-"
+                                f"{second_iface['name']}"
+                            ),
                             "status": "connected",
                             "start": {
                                 "network": {"title": title},
@@ -539,14 +842,23 @@ def exercise_user_workload(
                             },
                         }
                         if rng.random() < error_rate:
-                            nested_payload = inject_invalid_payload(rng, "nested-connection", nested_payload)
-                        conn_result = safe_call("create_connection_full", client.create_connection_full, token, nested_payload)
+                            nested_payload = inject_invalid_payload(
+                                rng, "nested-connection", nested_payload
+                            )
+                        conn_result = safe_call(
+                            "create_connection_full",
+                            client.create_connection_full,
+                            token,
+                            nested_payload,
+                        )
                         if not conn_result["ok"]:
                             error_count += 1
                             continue
                         conn = conn_result["value"]
                         created_connections.append(conn)
-                        safe_call("list_connections", client.list_connections, token)
+                        safe_call(
+                            "list_connections", client.list_connections, token
+                        )
 
                         if len(created_connections) >= 2:
                             update_payload = {
@@ -557,13 +869,31 @@ def exercise_user_workload(
                             }
                             if rng.random() < error_rate:
                                 update_payload["status"] = "not-a-status"
-                            safe_call("update_connection_full", client.update_connection_full, token, conn["id"], update_payload)
+                            safe_call(
+                                "update_connection_full",
+                                client.update_connection_full,
+                                token,
+                                conn["id"],
+                                update_payload,
+                            )
 
-    for conn in created_connections[: max(1, min(3, len(created_connections) // 5))]:
+    for conn in created_connections[
+        : max(1, min(3, len(created_connections) // 5))
+    ]:
         if rng.random() < error_rate:
-            safe_call("delete_connection", client.delete_connection, token, conn["id"] + 999999)
+            safe_call(
+                "delete_connection",
+                client.delete_connection,
+                token,
+                conn["id"] + 999999,
+            )
         else:
-            safe_call("delete_connection", client.delete_connection, token, conn["id"])
+            safe_call(
+                "delete_connection",
+                client.delete_connection,
+                token,
+                conn["id"],
+            )
 
     safe_call("list_networks", client.list_networks, token)
     safe_call("list_sites", client.list_sites, token)
@@ -617,27 +947,46 @@ def run_load_test(
 
     HALT_ON_STATUS = halt_on_status
     admin_password = resolve_admin_password()
-    client = ApiClient(base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status)
+    client = ApiClient(
+        base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status
+    )
 
     if dry_run:
-        print(f"Dry run: {base_url} with {user_count} users and {parallel} workers")
-        print(json.dumps({
-            "targets": DEFAULT_TARGETS,
-            "error_rate": error_rate,
-            "admin_password_loaded": bool(admin_password),
-            "single_worker": parallel == 1,
-            "halt_on_status": halt_on_status,
-            "debug_payloads": debug_payloads,
-        }, indent=2))
+        print(
+            "Dry run: "
+            f"{base_url} with {user_count} users and {parallel} "
+            "workers"
+        )
+        print(
+            json.dumps(
+                {
+                    "targets": DEFAULT_TARGETS,
+                    "error_rate": error_rate,
+                    "admin_password_loaded": bool(admin_password),
+                    "single_worker": parallel == 1,
+                    "halt_on_status": halt_on_status,
+                    "debug_payloads": debug_payloads,
+                },
+                indent=2,
+            )
+        )
         return
 
     try:
         client.health_check()
     except Exception as exc:
-        print(f"Warning: API health check failed ({exc}). Continuing with the load test anyway.", file=sys.stderr)
+        print(
+            "Warning: API health check failed ("
+            f"{exc}). Continuing with the load test anyway.",
+            file=sys.stderr,
+        )
 
     targets = build_target_counts(user_count, DEFAULT_TARGETS)
-    print(f"Creating {user_count} users with {parallel} workers (error rate: {error_rate})...")
+    print(
+        "Creating "
+        f"{user_count} users with {parallel} workers "
+        f"(error rate: {error_rate})..."
+    )
     users = []
     for idx in range(len(seed["users"])):
         result = create_user_session(
@@ -655,12 +1004,23 @@ def run_load_test(
 
     print(f"Created {len(users)} usable user sessions.")
 
-    total_summary = {"networks": 0, "sites": 0, "devices": 0, "interfaces": 0, "connections": 0, "errors": 0}
+    total_summary = {
+        "networks": 0,
+        "sites": 0,
+        "devices": 0,
+        "interfaces": 0,
+        "connections": 0,
+        "errors": 0,
+    }
 
     with ThreadPoolExecutor(max_workers=parallel) as executor:
         futures = []
         for index in range(parallel):
-            api = ApiClient(base_url, debug_payloads=debug_payloads, halt_on_status=halt_on_status)
+            api = ApiClient(
+                base_url,
+                debug_payloads=debug_payloads,
+                halt_on_status=halt_on_status,
+            )
             user_inx = index % len(users)
             user = users[user_inx]
             futures.append(
@@ -678,24 +1038,86 @@ def run_load_test(
 
         for future in as_completed(futures):
             result = future.result()
-            for key in ("networks", "sites", "devices", "interfaces", "connections"):
+            for key in (
+                "networks",
+                "sites",
+                "devices",
+                "interfaces",
+                "connections",
+            ):
                 total_summary[key] += result.get(key, 0)
             total_summary["errors"] += result.get("errors", 0)
 
-    print(json.dumps({"targets": DEFAULT_TARGETS, "actual": total_summary}, indent=2))
+    print(
+        json.dumps(
+            {"targets": DEFAULT_TARGETS, "actual": total_summary}, indent=2
+        )
+    )
     return total_summary
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Stochastic API load test for the network app.")
-    parser.add_argument("--base-url", default=os.environ.get("API_BASE_URL", "http://localhost:8000"), help="Base API URL, e.g. http://localhost:8000")
-    parser.add_argument("--users", type=int, default=DEFAULT_TARGETS["users"], help="Number of users to create and drive in parallel.")
-    parser.add_argument("--parallel", type=int, default=8, help="Maximum parallel worker count for user creation and workload execution.")
-    parser.add_argument("--single-user", "--single-worker", dest="single_user", action="store_true", help="Use the first seeded user, skip user creation, and run one worker for a single-user debug flow.")
-    parser.add_argument("--error-rate", type=float, default=0.15, help="Probability of injecting invalid payloads or deliberately bad IDs into a request. Range 0.0 to 1.0.")
-    parser.add_argument("--debug-payloads", action="store_true", help="Print the JSON payload for each API request before it is sent.")
-    parser.add_argument("--halt-on-status", type=int, default=None, help="Stop the script immediately when a request returns this HTTP status code (for example 400 or 500).")
-    parser.add_argument("--dry-run", action="store_true", help="Display the target sizes without creating data.")
+    parser = argparse.ArgumentParser(
+        description="Stochastic API load test for the network app."
+    )
+    parser.add_argument(
+        "--base-url",
+        default=os.environ.get("API_BASE_URL", "http://localhost:8000"),
+        help="Base API URL, e.g. http://localhost:8000",
+    )
+    parser.add_argument(
+        "--users",
+        type=int,
+        default=DEFAULT_TARGETS["users"],
+        help="Number of users to create and drive in parallel.",
+    )
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=8,
+        help=(
+            "Maximum parallel worker count for user creation and "
+            "workload execution."
+        ),
+    )
+    parser.add_argument(
+        "--single-user",
+        "--single-worker",
+        dest="single_user",
+        action="store_true",
+        help=(
+            "Use the first seeded user, skip user creation, and run "
+            "one worker for a single-user debug flow."
+        ),
+    )
+    parser.add_argument(
+        "--error-rate",
+        type=float,
+        default=0.15,
+        help=(
+            "Probability of injecting invalid payloads or deliberately "
+            "bad IDs into a request. Range 0.0 to 1.0."
+        ),
+    )
+    parser.add_argument(
+        "--debug-payloads",
+        action="store_true",
+        help="Print the JSON payload for each API request before it is sent.",
+    )
+    parser.add_argument(
+        "--halt-on-status",
+        type=int,
+        default=None,
+        help=(
+            "Stop the script immediately when a request returns this "
+            "HTTP status code (for example 400 or 500)."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Display the target sizes without creating data.",
+    )
     args = parser.parse_args()
     if args.single_user:
         args.parallel = 1
@@ -707,8 +1129,14 @@ if __name__ == "__main__":
     args = parse_args()
     if not 0.0 <= args.error_rate <= 1.0:
         raise SystemExit("--error-rate must be between 0.0 and 1.0")
-    if args.halt_on_status is not None and not 100 <= args.halt_on_status <= 599:
-        raise SystemExit("--halt-on-status must be a valid HTTP status code between 100 and 599")
+    if (
+        args.halt_on_status is not None
+        and not 100 <= args.halt_on_status <= 599
+    ):
+        raise SystemExit(
+            "--halt-on-status must be a valid HTTP status code "
+            "between 100 and 599"
+        )
     try:
         run_load_test(
             args.base_url,

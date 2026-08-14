@@ -1,14 +1,17 @@
 """
 Database models.
 """
+
 import uuid
-import os
 
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import (
-    AbstractBaseUser, BaseUserManager, PermissionsMixin,
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
 )
+
 
 class UserManager(BaseUserManager):
     """Manager for users."""
@@ -16,7 +19,7 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         """Create, save and return a new user."""
         if not email:
-            raise ValueError('Users must have an email address.')
+            raise ValueError("Users must have an email address.")
 
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
@@ -36,6 +39,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     """Custom user model that supports using email instead of username."""
+
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -43,7 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
 
 
 class SiteStatus(models.TextChoices):
@@ -54,6 +58,7 @@ class SiteStatus(models.TextChoices):
 
 class Network(models.Model):
     """Network object."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -67,6 +72,7 @@ class Network(models.Model):
 
 class Site(models.Model):
     """Site to be used in networks."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -74,7 +80,7 @@ class Site(models.Model):
     network = models.ForeignKey(
         Network,
         on_delete=models.CASCADE,
-        related_name='sites',
+        related_name="sites",
     )
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
@@ -90,6 +96,7 @@ class Site(models.Model):
 
 class Device(models.Model):
     """Device to be used in a site."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -98,28 +105,31 @@ class Device(models.Model):
     site = models.ForeignKey(
         Site,
         on_delete=models.CASCADE,
-        related_name='devices',
+        related_name="devices",
     )
     serial_number = models.CharField(max_length=255, unique=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['site', 'name'],
-                name='unique_device_name_per_site',
+                fields=["site", "name"],
+                name="unique_device_name_per_site",
             )
         ]
 
     def __str__(self):
         return self.name
 
+
 class InterfaceStatus(models.TextChoices):
     UP = "up", "Up"
     DOWN = "down", "Down"
     MAINTENANCE = "maintenance", "Maintenance"
 
+
 class Interface(models.Model):
     """Interface to be used in a device."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -128,7 +138,7 @@ class Interface(models.Model):
     device = models.ForeignKey(
         Device,
         on_delete=models.CASCADE,
-        related_name='interfaces',
+        related_name="interfaces",
     )
     speed = models.PositiveIntegerField()
     status = models.CharField(
@@ -140,25 +150,30 @@ class Interface(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['device', 'name'],
-                name='unique_interface_name_per_device',
+                fields=["device", "name"],
+                name="unique_interface_name_per_device",
             )
         ]
 
     def __str__(self):
         return f"{self.device.name} - {self.name}"
 
+
 class ConnectionStatus(models.TextChoices):
     CONNECTED = "connected", "Connected"
     DISCONNECTED = "disconnected", "Disconnected"
 
+
 class Connection(models.Model):
     """Connection between two interfaces."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
-    connection_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    connection_id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True
+    )
     name = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(
         max_length=255,
@@ -169,19 +184,19 @@ class Connection(models.Model):
     start = models.ForeignKey(
         Interface,
         on_delete=models.CASCADE,
-        related_name='connections_as_start',
+        related_name="connections_as_start",
     )
     end = models.ForeignKey(
         Interface,
         on_delete=models.CASCADE,
-        related_name='connections_as_end',
+        related_name="connections_as_end",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['start', 'end'],
-                name='unique_connection_between_interfaces',
+                fields=["start", "end"],
+                name="unique_connection_between_interfaces",
             )
         ]
 

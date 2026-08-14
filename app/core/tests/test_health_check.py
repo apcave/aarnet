@@ -1,6 +1,7 @@
-""""
+""" "
 Tests for the health check API.
 """
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -15,8 +16,8 @@ class HealthCheckTestCase(TestCase):
         """Test the health check API."""
 
         client = APIClient()
-        url = reverse('health-check')
+        url = reverse("health-check")
         response = client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {'healthy': True})
+        self.assertEqual(response.data, {"healthy": True})

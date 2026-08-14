@@ -183,3 +183,4 @@ app/*/*/*/__pycache__/
 .venv/
 venv/
 app/staticfiles/
+app/core/migrations/0*.py

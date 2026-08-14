@@ -1,3 +1,15 @@
 #!/bin/bash
-cd app
-flake8 .
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [ -f .venv/bin/activate ]; then
+  . .venv/bin/activate
+fi
+
+autopep8 --in-place --recursive --aggressive --max-line-length 79 app
+flake8 app --max-line-length=79 --extend-ignore=E128
+
+autopep8 --in-place --recursive --aggressive --max-line-length 79 run_time_tests
+flake8 run_time_tests --max-line-length=79 --extend-ignore=E128

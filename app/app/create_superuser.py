@@ -25,8 +25,8 @@ def create_superuser() -> None:
     django.setup()
 
     tables = connection.introspection.table_names()
-    if 'core_user' not in tables:
-        call_command('migrate', verbosity=0, run_syncdb=True)
+    if "core_user" not in tables:
+        call_command("migrate", verbosity=0, run_syncdb=True)
 
     from django.contrib.auth import get_user_model
 
