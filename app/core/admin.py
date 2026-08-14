@@ -51,3 +51,6 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Network)
 admin.site.register(models.Site)
+admin.site.register(models.Device)
+admin.site.register(models.Interface)
+admin.site.register(models.Connection)
